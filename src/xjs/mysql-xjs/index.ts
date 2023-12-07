@@ -1,5 +1,5 @@
 import DbConfig from "../../config/db";
-import Mysql, {FieldPacket, Pool, RowDataPacket} from "mysql2";
+import Mysql, {Pool} from "mysql2";
 
 class MysqlXjs {
     private static instance: MysqlXjs;

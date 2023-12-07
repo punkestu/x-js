@@ -1,8 +1,6 @@
 import Yargs from "yargs";
 import Execute from "./god/executor/migrate";
-import yargs from "yargs";
 import CreateDb from "./god/executor/createDb";
-import MysqlXjs from "./xjs/mysql-xjs";
 
 Yargs
     .scriptName("xjs")
