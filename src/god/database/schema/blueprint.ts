@@ -3,7 +3,7 @@ export enum ColType {
     String
 }
 
-class Attribute {
+export class Attribute {
     length: number | undefined;
     notNull: boolean | undefined;
     primary: boolean | undefined;
