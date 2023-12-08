@@ -27,11 +27,6 @@ function generateColumn(name: string, attr: Attribute): string {
     return column_str;
 }
 
-type Sql = {
-    action: string,
-    query: string
-}
-
 class Schema {
     async create(name: string, builder: (table: Blueprint) => void) {
         const dbBuilder = new Blueprint();

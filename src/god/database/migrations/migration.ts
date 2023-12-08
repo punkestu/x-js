@@ -1,6 +1,3 @@
-import Schema from "../../support/facades/schema";
-import MysqlXjs from "../../../xjs/mysql-xjs";
-
 export default class Migration {
     private name: string;
 
