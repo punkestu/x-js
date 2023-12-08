@@ -1,4 +1,4 @@
-import MysqlXjs from "../../../xjs/mysql-xjs";
+import {Context as DB} from "../../../xjs/mysql-xjs";
 import Blueprint, {Attribute, ColType} from "../../database/schema/blueprint";
 
 function generateColumn(name: string, attr: Attribute): string {
@@ -27,11 +27,15 @@ function generateColumn(name: string, attr: Attribute): string {
     return column_str;
 }
 
+type Sql = {
+    action: string,
+    query: string
+}
+
 class Schema {
     async create(name: string, builder: (table: Blueprint) => void) {
         const dbBuilder = new Blueprint();
         builder(dbBuilder);
-        console.log(`--- creating table: ${name}`);
         const columns_name = Object.keys(dbBuilder.structure);
         let columns: string[] = [];
         columns_name.forEach(column_name => {
@@ -39,14 +43,13 @@ class Schema {
             let column_str = generateColumn(column_name, column);
             columns.push(column_str);
         })
-        await MysqlXjs.execute("CREATE TABLE " + name + "(" + columns.join(",") + ")");
-        console.log(`--- created table: ${name}`);
+        console.log(`--- creating table: ${name}`);
+        await DB.execute("CREATE TABLE " + name + "(" + columns.join(",") + ");");
     }
 
     async dropIfExists(name: string) {
         console.log(`--- dropping table: ${name}`);
-        await MysqlXjs.execute("DROP TABLE IF EXISTS " + name);
-        console.log(`--- dropped table: ${name}`);
+        await DB.execute("DROP TABLE IF EXISTS " + name + ";");
     }
 }
 

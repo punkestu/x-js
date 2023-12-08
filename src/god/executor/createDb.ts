@@ -1,5 +1,5 @@
-import {InitDB} from "../../xjs/mysql-xjs";
+import MysqlXjs from "../../xjs/mysql-xjs";
 
 export default async function CreateDb() {
-    await InitDB();
+    await MysqlXjs.initDB();
 }

@@ -1,5 +1,5 @@
 import DbConfig from "../../config/db";
-import Mysql, {Pool} from "mysql2";
+import Mysql, {Pool, ResultSetHeader} from "mysql2/promise";
 
 class MysqlXjs {
     private static instance: MysqlXjs;
@@ -9,28 +9,18 @@ class MysqlXjs {
         this.pool = Mysql.createPool({
             user: DbConfig.username,
             password: DbConfig.password,
-            host: DbConfig.host || "localhost",
-            port: parseInt(DbConfig.port || "3306"),
+            host: DbConfig.host,
+            port: parseInt(DbConfig.port || ""),
             database: DbConfig.dbName
         });
     }
 
     query(sql: string, param: any[] = []) {
-        return new Promise((resolve, reject) => {
-            this.pool.query(sql, param, (err, res) => {
-                if (err) return reject(err);
-                resolve(res);
-            })
-        });
+        return this.pool.query(sql, param);
     }
 
     execute(sql: string, param: any[] = []) {
-        return new Promise((resolve, reject) => {
-            this.pool.execute(sql, param, (err, res) => {
-                if (err) return reject(err);
-                resolve(res);
-            })
-        });
+        return this.pool.execute(sql, param);
     }
 
     static open() {
@@ -38,8 +28,9 @@ class MysqlXjs {
             MysqlXjs.instance = new MysqlXjs();
         }
     }
-    static close() {
-        MysqlXjs.instance.pool.end();
+
+    static async close() {
+        await MysqlXjs.instance.pool.end();
     }
 
     static get(): MysqlXjs {
@@ -48,17 +39,42 @@ class MysqlXjs {
     }
 
     static async initDB() {
-        const conn = Mysql.createConnection({
+        const conn = await Mysql.createConnection({
             user: DbConfig.username,
             password: DbConfig.password
         });
-        conn.query(`CREATE DATABASE ${DbConfig.dbName}`);
-        conn.end();
+        try {
+            const [result] = await conn.query<ResultSetHeader[]>(`SHOW DATABASES LIKE '${DbConfig.dbName}'`);
+            if (result.length === 0) {
+                console.log(`=== creating database ${DbConfig.dbName}`);
+                await conn.query(`CREATE DATABASE ${DbConfig.dbName}`);
+            } else {
+                console.log(`=== database ${DbConfig.dbName} was created`);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        await conn.end();
+    }
+
+    static async initMigration() {
+        try {
+            const [result] = await MysqlXjs.instance.pool.query<ResultSetHeader[]>(`SHOW TABLES LIKE 'xjs_migrations'`);
+            if (result.length === 0) {
+                console.log(`=== creating table migrations`);
+                await MysqlXjs.instance.pool.query("CREATE TABLE " +
+                    `xjs_migrations (` +
+                    "migration VARCHAR(255) NOT NULL," +
+                    "batch INT NOT NULL" +
+                    ")");
+            } else {
+                console.log(`=== table migrations was created`);
+            }
+        } catch (err) {
+            console.error(err);
+        }
     }
 }
 
-export const InitDB = MysqlXjs.initDB;
-export const OpenDB = MysqlXjs.open;
-export const CloseDB = MysqlXjs.close;
-
-export default MysqlXjs.get();
+export const Context = MysqlXjs.get();
+export default MysqlXjs;

@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import path from "path";
-import {CloseDB, OpenDB} from "../../xjs/mysql-xjs";
+import MysqlXjs from "../../xjs/mysql-xjs";
 
 export enum MigrateState {
     Up = "up",
@@ -8,6 +8,7 @@ export enum MigrateState {
 }
 
 async function migrate(state: string) {
+    await MysqlXjs.initMigration();
     const files = fs.readdirSync(path.join(__dirname, "/../../database/migrations"))
         .filter(file => {
             return (
@@ -15,21 +16,19 @@ async function migrate(state: string) {
                 file.slice(-3) === '.ts'
             );
         });
-    switch (state) {
-        case MigrateState.Up:
-            for (const file of files) {
-                console.log(`running up migration: ${file}`);
-                const migration = await import(path.join(__dirname, "../../database/migrations/", file));
-                await migration.default.up();
-            }
-            break;
-        case MigrateState.Down:
-            for (const file of files) {
-                console.log(`running up migration: ${file}`);
-                const migration = await import(path.join(__dirname, "../../database/migrations/", file));
-                await migration.default.down();
-            }
-            break;
+    for (const file of files) {
+        const migration = await import(path.join(__dirname, "../../database/migrations/", file));
+        const migrator = new migration.default(file.slice(0, -3));
+        switch (state) {
+            case MigrateState.Up:
+                console.log(`running up migration: ${file.slice(0, -3)}`);
+                await migrator.migrate_up();
+                break;
+            case MigrateState.Down:
+                console.log(`running down migration: ${file.slice(0, -3)}`);
+                await migrator.migrate_down();
+                break;
+        }
     }
 }
 
@@ -38,9 +37,9 @@ type ExecuteParam = {
 };
 export default async function Execute(params: ExecuteParam) {
     if (typeof params.state == "string") {
-        OpenDB();
+        await MysqlXjs.open();
         await migrate(params.state);
-        CloseDB();
+        await MysqlXjs.close();
     } else {
         console.warn("state is not provided");
     }
