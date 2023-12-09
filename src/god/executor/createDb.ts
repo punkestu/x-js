@@ -1,5 +1,5 @@
-import MysqlXjs from "../../xjs/mysql-xjs";
+import {DBSingleton} from "../database";
 
 export default async function CreateDb() {
-    await MysqlXjs.initDB();
+    await DBSingleton.initDB();
 }

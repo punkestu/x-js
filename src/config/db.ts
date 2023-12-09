@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import MysqlXjs from "../xjs/mysql-xjs";
 dotenv.config();
 
 export default {

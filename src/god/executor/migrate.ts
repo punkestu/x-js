@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import path from "path";
-import MysqlXjs, {Context} from "../../xjs/mysql-xjs";
+import {DB, DBSingleton} from "../database";
 
 export enum MigrateState {
     Up = "up",
@@ -9,7 +9,7 @@ export enum MigrateState {
 }
 
 async function migrate(state: string, step: number = 1) {
-    await MysqlXjs.initMigration();
+    await DBSingleton.initMigration();
     const files = fs.readdirSync(path.join(__dirname, "/../../database/migrations"))
         .filter(file => {
             return (
@@ -19,7 +19,7 @@ async function migrate(state: string, step: number = 1) {
         });
     if (state === MigrateState.Rollback) {
         console.log("rollback last migration");
-        const lastMigrations = await Context.getLastMigration();
+        const lastMigrations = await DBSingleton.get().getLastMigration();
         if (lastMigrations.length > 0) {
             for (const lastMigration of lastMigrations.slice(0, step)) {
                 const file: string = lastMigration["migration"];
@@ -53,9 +53,8 @@ type ExecuteParam = {
 };
 export default async function Execute(params: ExecuteParam) {
     if (typeof params.state == "string") {
-        await MysqlXjs.open();
         await migrate(params.state, params.step);
-        await MysqlXjs.close();
+        await DB().close();
     } else {
         console.warn("state is not provided");
     }
