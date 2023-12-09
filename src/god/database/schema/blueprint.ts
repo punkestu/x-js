@@ -28,7 +28,7 @@ export class Attribute {
     }
 }
 
-interface Structure {
+export interface Structure {
     [column: string]: Attribute
 }
 

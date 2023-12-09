@@ -9,6 +9,11 @@ Yargs
         yargs => {
             return yargs.positional("state", {
                 describe: "migration state",
+            }).option("step", {
+                alias: "s",
+                describe: "step of rollback",
+                type: "number",
+                default: 1
             });
         },
         async args => {

@@ -1,13 +1,15 @@
 import * as fs from "fs";
 import path from "path";
-import MysqlXjs from "../../xjs/mysql-xjs";
+import MysqlXjs, {Context} from "../../xjs/mysql-xjs";
+import Schema from "../support/facades/schema";
 
 export enum MigrateState {
     Up = "up",
-    Down = "down"
+    Down = "down",
+    Rollback = "rollback"
 }
 
-async function migrate(state: string) {
+async function migrate(state: string, step: number = 1) {
     await MysqlXjs.initMigration();
     const files = fs.readdirSync(path.join(__dirname, "/../../database/migrations"))
         .filter(file => {
@@ -16,6 +18,20 @@ async function migrate(state: string) {
                 file.slice(-3) === '.ts'
             );
         });
+    if (state === MigrateState.Rollback) {
+        console.log("rollback last migration");
+        const lastMigrations = await Context.getLastMigration();
+        if (lastMigrations.length > 0) {
+            for (const lastMigration of lastMigrations.slice(0, step)) {
+                const file: string = lastMigration["migration"];
+                const migration = await import(path.join(__dirname, "../../database/migrations/", file + ".ts"));
+                const migrator = new migration.default(file);
+                console.log(`=== rollback ${file}`);
+                await migrator.migrate_down();
+            }
+        }
+        return;
+    }
     for (const file of files) {
         const migration = await import(path.join(__dirname, "../../database/migrations/", file));
         const migrator = new migration.default(file.slice(0, -3));
@@ -33,12 +49,13 @@ async function migrate(state: string) {
 }
 
 type ExecuteParam = {
-    state: unknown
+    state: unknown,
+    step: number | undefined
 };
 export default async function Execute(params: ExecuteParam) {
     if (typeof params.state == "string") {
         await MysqlXjs.open();
-        await migrate(params.state);
+        await migrate(params.state, params.step);
         await MysqlXjs.close();
     } else {
         console.warn("state is not provided");
