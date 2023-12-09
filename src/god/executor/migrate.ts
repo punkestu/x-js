@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import path from "path";
 import MysqlXjs, {Context} from "../../xjs/mysql-xjs";
-import Schema from "../support/facades/schema";
 
 export enum MigrateState {
     Up = "up",
