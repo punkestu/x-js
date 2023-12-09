@@ -1,7 +1,9 @@
 import Yargs from "yargs";
 import Execute from "./god/executor/migrate";
 import CreateDb from "./god/executor/createDb";
+import Init from "./bootstrap/bootstrap";
 
+Init()
 Yargs
     .scriptName("xjs")
     .usage("Usage: $0 <cmd> [args]")

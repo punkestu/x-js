@@ -1,6 +1,7 @@
 import DbConfig from "../../config/db";
 import Mysql, {Pool, ResultSetHeader, RowDataPacket} from "mysql2/promise";
 import {Attribute, ColType, Structure} from "../../god/database/schema/blueprint";
+import DBInterface, {DropTableOpt} from "../database/interface";
 
 function generateColumn(name: string, attr: Attribute): string {
     let column_str = "";
@@ -28,15 +29,10 @@ function generateColumn(name: string, attr: Attribute): string {
     return column_str;
 }
 
-type DropTableOpt = {
-    ifExists: boolean | undefined
-}
-
-class MysqlXjs {
-    private static instance: MysqlXjs;
+class MysqlXjs implements DBInterface{
     private pool: Pool;
 
-    private constructor() {
+    constructor() {
         this.pool = Mysql.createPool({
             user: DbConfig.username,
             password: DbConfig.password,
@@ -125,22 +121,7 @@ class MysqlXjs {
         }
     }
 
-    static open() {
-        if (!MysqlXjs.instance) {
-            MysqlXjs.instance = new MysqlXjs();
-        }
-    }
-
-    static async close() {
-        await MysqlXjs.instance.pool.end();
-    }
-
-    static get(): MysqlXjs {
-        MysqlXjs.open();
-        return this.instance;
-    }
-
-    static async initDB() {
+    async initDB() {
         const conn = await Mysql.createConnection({
             user: DbConfig.username,
             password: DbConfig.password
@@ -159,19 +140,17 @@ class MysqlXjs {
         await conn.end();
     }
 
-    static async initMigration() {
+    async initMigration() {
         try {
-            const [result] = await MysqlXjs.instance.pool.query<ResultSetHeader[]>(`SHOW TABLES LIKE 'xjs_migrations'`);
+            const [result] = await this.pool.query<ResultSetHeader[]>(`SHOW TABLES LIKE 'xjs_migrations'`);
             if (result.length === 0) {
                 console.log(`=== creating table migrations`);
-                await MysqlXjs.instance.pool.query("CREATE TABLE " +
+                await this.pool.query("CREATE TABLE " +
                     `xjs_migrations (` +
                     "migration VARCHAR(255) NOT NULL UNIQUE," +
                     "batch INT NOT NULL," +
                     "createdAt TIMESTAMP DEFAULT NOW()" +
                     ")");
-            } else {
-                console.log(`=== table migrations was created`);
             }
         } catch (err) {
             console.error(err);
@@ -179,8 +158,8 @@ class MysqlXjs {
     }
 
     async getLastBatch(): Promise<number> {
-        return await this.pool.query<RowDataPacket[]>("SELECT IFNULL(MAX(batch),0) + 1 as last_batch FROM xjs_migrations")
-            .then(([result, _]) => result[0]["last_batch"]);
+        const [result] = await this.pool.query<RowDataPacket[]>("SELECT IFNULL(MAX(batch),0) + 1 as last_batch FROM xjs_migrations")
+        return result[0]["last_batch"];
     }
 
     async trackMigration(name: string, batch: number) {
@@ -195,12 +174,13 @@ class MysqlXjs {
     }
 
     async getLastMigration() {
-        return await this.pool.query<RowDataPacket[]>("SELECT migration FROM xjs_migrations ORDER BY createdAt DESC")
-            .then(([result, _]) => {
-                return result;
-            });
+        const [result] = await this.pool.query<RowDataPacket[]>("SELECT migration FROM xjs_migrations ORDER BY createdAt DESC, migration DESC");
+        return result;
+    }
+
+    async close() {
+        await this.pool.end();
     }
 }
 
-export const Context = MysqlXjs.get();
 export default MysqlXjs;
