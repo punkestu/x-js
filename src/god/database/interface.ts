@@ -1,4 +1,4 @@
-import {Structure} from "../../god/database/schema/blueprint";
+import {Structure} from "./schema/blueprint";
 
 export type DropTableOpt = {
     ifExists: boolean | undefined

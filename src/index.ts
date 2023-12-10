@@ -2,10 +2,11 @@ import Yargs from "yargs";
 import Execute from "./god/executor/migrate";
 import CreateDb from "./god/executor/createDb";
 import Init from "./bootstrap/bootstrap";
+import genMigration from "./god/executor/genMigration";
 
 Init()
 Yargs
-    .scriptName("xjs")
+    .scriptName("xjs-lib")
     .usage("Usage: $0 <cmd> [args]")
     .command("db:migrate [state]", "Migrate on database",
         yargs => {
@@ -26,6 +27,16 @@ Yargs
     }, async () => {
         await CreateDb();
     })
+    .command("make:migration [name]", "Create migration file",
+        (yargs) => {
+            return yargs.positional("name", {
+                describe: "migration name",
+                type: "string",
+                demandOption: true
+            });
+        }, async (args) => {
+            await genMigration(<string>args.name);
+        })
     .help()
     .command({
         command: '*',

@@ -1,4 +1,4 @@
-import DBInterface from "../../xjs/database/interface";
+import DBInterface from "./interface";
 
 class Database {
     private static instance: DBInterface;
