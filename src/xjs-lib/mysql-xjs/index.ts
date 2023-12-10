@@ -1,7 +1,7 @@
 import DbConfig from "../../config/db";
 import Mysql, {Pool, ResultSetHeader, RowDataPacket} from "mysql2/promise";
 import {Attribute, ColType, Structure} from "../../god/database/schema/blueprint";
-import DBInterface, {DropTableOpt} from "../database/interface";
+import DBInterface, {DropTableOpt} from "../../god/database/interface";
 
 function generateColumn(name: string, attr: Attribute): string {
     let column_str = "";
