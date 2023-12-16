@@ -1,7 +1,7 @@
 import DbConfig from "../../config/db";
 import Mysql, {Pool, ResultSetHeader, RowDataPacket} from "mysql2/promise";
 import {Attribute, ColType, Structure} from "../../god/database/schema/blueprint";
-import DBInterface, {DropTableOpt} from "../../god/database/interface";
+import DBInterface, {DropTableOpt, ExecResult, RowData} from "../../god/database/interface";
 
 function generateColumn(name: string, attr: Attribute): string {
     let column_str = "";
@@ -42,12 +42,14 @@ class MysqlXjs implements DBInterface{
         });
     }
 
-    query(sql: string, param: any[] = []) {
-        return this.pool.query(sql, param);
+    async query(sql: string, param: any[] = []): Promise<RowData[]> {
+        const [result, _] = await this.pool.query<RowDataPacket[]>(sql, param);
+        return result;
     }
 
-    execute(sql: string, param: any[] = []) {
-        return this.pool.execute(sql, param);
+    async execute(sql: string, param: any[] = []): Promise<ExecResult> {
+        const [result] = await this.pool.execute<ResultSetHeader>(sql, param);
+        return result;
     }
 
     async createTable(name: string, attribute: Structure): Promise<boolean> {
